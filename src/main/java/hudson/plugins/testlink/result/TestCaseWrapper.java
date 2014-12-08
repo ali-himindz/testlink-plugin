@@ -288,6 +288,14 @@ public class TestCaseWrapper implements Serializable {
 		this.testCase.setSummary(summary);
 	}
 	
+	public String getPreconditions() {
+		return this.testCase.getPreconditions();
+	}
+	
+	public void setPreconditions(String preconditions) {
+		this.testCase.setPreconditions(preconditions);
+	}
+	
 	public List<TestCaseStep> getSteps() {
 		return this.testCase.getSteps();
 	}
