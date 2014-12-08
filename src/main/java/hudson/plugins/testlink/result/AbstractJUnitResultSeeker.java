@@ -34,6 +34,8 @@ import hudson.tasks.junit.SuiteResult;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import br.eti.kinoshita.testlinkjavaapi.constants.ExecutionStatus;
 import br.eti.kinoshita.testlinkjavaapi.model.Attachment;
@@ -50,7 +52,8 @@ public abstract class AbstractJUnitResultSeeker extends ResultSeeker {
 	private static final String TEXT_XML_CONTENT_TYPE = "text/xml";
 	
 	private boolean attachJUnitXML = false;
-	
+	private static final Logger LOGGER = Logger.getLogger("hudson.plugins.testlink");
+
 	/**
 	 * @param includePattern
 	 * @param keyCustomField
@@ -76,6 +79,8 @@ public abstract class AbstractJUnitResultSeeker extends ResultSeeker {
 	}
 
 	protected void handleResult(TestCaseWrapper automatedTestCase, AbstractBuild<?, ?> build, BuildListener listener, TestLinkSite testlink, final SuiteResult suiteResult) {
+		LOGGER.log(Level.ALL, "Status="+automatedTestCase.getExecutionStatus(this.keyCustomField)+" keyCustomField="+this.keyCustomField);
+		LOGGER.log(Level.ALL, "Name="+automatedTestCase.getName());
 		if(automatedTestCase.getExecutionStatus(this.keyCustomField) != ExecutionStatus.NOT_RUN) {
 			try {
 				listener.getLogger().println( Messages.TestLinkBuilder_Update_AutomatedTestCases() );

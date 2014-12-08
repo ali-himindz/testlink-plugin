@@ -105,7 +105,10 @@ public class JUnitAllResultSeeker extends AbstractJUnitResultSeeker {
 							automatedTestCase.appendNotes(notes);
 						}
 						ExecutionStatus status = this.getExecutionStatus(caseResult);
-						automatedTestCase.addCustomFieldAndStatus(caseResult.getName(), status);
+						automatedTestCase.setExecutionStatus(status);
+						automatedTestCase.addCustomFieldAndStatus(this.keyCustomField, status);
+						LOGGER.log(Level.ALL, "Posting result to TestLink:"+automatedTestCase.getName()+" result="+automatedTestCase.getExecutionStatus());
+
 						super.handleResult(automatedTestCase, build, listener, testlink, suiteResult);
 						
 					}
