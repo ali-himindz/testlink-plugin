@@ -52,7 +52,7 @@ import br.eti.kinoshita.testlinkjavaapi.constants.ExecutionStatus;
  * @author Oliver Merkel - Merkel.Oliver at web.de
  * @since 3.1
  */
-public class JUnitCaseNameResultSeeker extends AbstractJUnitResultSeeker {
+public class JUnitAllResultSeeker extends AbstractJUnitResultSeeker {
 	private static final Logger LOGGER = Logger.getLogger("hudson.plugins.testlink");
 
 	private static final long serialVersionUID = 2278496777245515704L;
@@ -63,7 +63,7 @@ public class JUnitCaseNameResultSeeker extends AbstractJUnitResultSeeker {
 	 * @param attachJUnitXML Bit that enables attaching result file to TestLink
 	 */
 	@DataBoundConstructor
-	public JUnitCaseNameResultSeeker(String includePattern, String keyCustomField, boolean attachJUnitXML, boolean includeNotes) {
+	public JUnitAllResultSeeker(String includePattern, String keyCustomField, boolean attachJUnitXML, boolean includeNotes) {
 		super(includePattern, keyCustomField, attachJUnitXML, includeNotes);
 	}
 
@@ -76,7 +76,7 @@ public class JUnitCaseNameResultSeeker extends AbstractJUnitResultSeeker {
 		 */
 		@Override
 		public String getDisplayName() {
-			return "JUnit case name"; // TBD: i18n
+			return "JUnit All Tests"; // TBD: i18n
 		}
 	}
 
@@ -99,24 +99,15 @@ public class JUnitCaseNameResultSeeker extends AbstractJUnitResultSeeker {
 					LOGGER.log(Level.ALL, "CaseResult="+caseResult.getName()+" isSkipped="+caseResult.isSkipped()+" Status= "+this.getExecutionStatus(caseResult));
 
 					for(TestCaseWrapper automatedTestCase : automatedTestCases) {
-						LOGGER.log(Level.ALL, "automatedTestCase="+automatedTestCase.getName()+" keyCustomField="+this.keyCustomField);
-						final String[] commaSeparatedValues = automatedTestCase.getKeyCustomFieldValues(this.keyCustomField);
-						LOGGER.log(Level.ALL, "automatedTestCase="+automatedTestCase.getName()+" keyfieldvalues="+commaSeparatedValues.length);
-						
-						for(String value : commaSeparatedValues) {
-							
-							if(! caseResult.isSkipped() && caseResult.getName().equals(value)) {
-								ExecutionStatus status = this.getExecutionStatus(caseResult);
-								automatedTestCase.addCustomFieldAndStatus(value, status);
-								
-								if(this.isIncludeNotes()) {
-									final String notes = this.getJUnitNotes(caseResult);
-									automatedTestCase.appendNotes(notes);
-								}
-								
-								super.handleResult(automatedTestCase, build, listener, testlink, suiteResult);
-							}
+						LOGGER.log(Level.ALL, "automatedTestCase="+automatedTestCase.getName());
+						if(this.isIncludeNotes()) {
+							final String notes = this.getJUnitNotes(caseResult);
+							automatedTestCase.appendNotes(notes);
 						}
+						ExecutionStatus status = this.getExecutionStatus(caseResult);
+						automatedTestCase.addCustomFieldAndStatus(caseResult.getName(), status);
+						super.handleResult(automatedTestCase, build, listener, testlink, suiteResult);
+						
 					}
 				}
 			}
