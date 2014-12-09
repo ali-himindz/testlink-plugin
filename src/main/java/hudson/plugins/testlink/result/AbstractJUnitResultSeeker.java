@@ -79,8 +79,6 @@ public abstract class AbstractJUnitResultSeeker extends ResultSeeker {
 	}
 
 	protected void handleCucumberJsonResult(TestCaseWrapper automatedTestCase, AbstractBuild<?, ?> build, BuildListener listener, TestLinkSite testlink, final SuiteResult suiteResult) {
-		LOGGER.log(Level.ALL, "Status="+automatedTestCase.getExecutionStatus(this.keyCustomField)+" keyCustomField="+this.keyCustomField);
-		LOGGER.log(Level.ALL, "Name="+automatedTestCase.getName());
 		if(automatedTestCase.getExecutionStatus() != ExecutionStatus.NOT_RUN) {
 			try {
 				listener.getLogger().println( Messages.TestLinkBuilder_Update_AutomatedTestCases() );

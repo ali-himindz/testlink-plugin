@@ -90,19 +90,37 @@ public class JUnitAllResultSeeker extends AbstractJUnitResultSeeker {
 			return "JUnit All Tests"; // TBD: i18n
 		}
 	}
-	
-	private boolean TestCaseWrapper getTestCaseAssociatedWithSuite(SuiteResult suiteResult,TestCaseWrapper[] automatedTestCases){
-		for (TestCaseWrapper automatedTestCase : automatedTestCases) {
-			List<CustomField> customfields = automatedTestCase.getCustomFields();
-			for (CustomField field: customfields){
-				for (CaseResult caseResult : suiteResult.getCases()) {
-					if (caseResult.getClassName().contains(field.getValue())){
-						
-					}
-				
+
+	private TestCaseWrapper getAssociatedTestCase(
+			TestCaseWrapper[] automatedTestCases, SuiteResult suiteResult) {
+		LOGGER.log(Level.ALL,"Finding Associated Test Cases for Suite="+suiteResult.getName());
+		
+		for (TestCaseWrapper tc : automatedTestCases) {
+			String name = tc.getName().toLowerCase().replace(" ", "_");
+			for (String classname : suiteResult.getClassNames()) {
+				LOGGER.log(Level.ALL,"Name="+name+" classname="+classname);
+				if (classname.contains(name)) {
+					LOGGER.log(Level.ALL, "Found Test Case :"+tc.getId()+":"
+							+ tc.getName()+" name="+name+" for classname="+classname+" for suiteResult="+suiteResult.getName());
+					return tc;
 				}
 			}
 		}
+		return null;
+	}
+
+	private ExecutionStatus getOverAllStatus(SuiteResult suiteResult) {
+		ExecutionStatus status = ExecutionStatus.NOT_RUN;
+		for (CaseResult caseResult : suiteResult.getCases()) {
+			if (this.getExecutionStatus(caseResult) == ExecutionStatus.FAILED) {
+				return ExecutionStatus.FAILED;
+			}
+			if (this.getExecutionStatus(caseResult) == ExecutionStatus.PASSED) {
+				status = ExecutionStatus.PASSED;
+			}
+		}
+		return status;
+
 	}
 
 	/*
@@ -124,45 +142,33 @@ public class JUnitAllResultSeeker extends AbstractJUnitResultSeeker {
 				Messages.Results_JUnit_LookingForTestCases()); // i18n
 		try {
 			final JUnitParser parser = new JUnitParser(false);
-			listener.getLogger().println(
-					"includePattern=" + this.includePattern);
-			LOGGER.log(Level.ALL, "includePattern=" + this.includePattern);
 
 			final TestResult testResult = parser.parse(this.includePattern,
 					build, launcher, listener);
-
+			
+			for (TestCaseWrapper tc:automatedTestCases){
+				LOGGER.log(Level.ALL, "Test Case ID="+tc.getId()+" name="+tc.getName());
+			}
 			for (SuiteResult suiteResult : testResult.getSuites()) {
-				LOGGER.log(Level.ALL, "JUnitAllResult.seek: SuiteResult.getName=" + suiteResult.getName());
-				ExecutionStatus status = ExecutionStatus.NOT_RUN;
-				String notes = "";
-				for (CaseResult caseResult : suiteResult.getCases()) {
-					LOGGER.log(Level.ALL, "JUnitAllResult.seek: caseResult.getName="+caseResult.getName()+" Status="+this.getExecutionStatus(caseResult));
-					if (status != ExecutionStatus.FAILED) {
-						status = this.getExecutionStatus(caseResult);
-					}
-					if (this.isIncludeNotes()) {
-						notes += "\n" + this.getJUnitNotes(caseResult);
-					}
+				ExecutionStatus overallStatus = getOverAllStatus(suiteResult);
 
-				}
-				LOGGER.log(Level.ALL, "JUnitAllResult.seek: Status = "+status+" for "+suiteResult.getName());
-				
-				for (TestCaseWrapper automatedTestCase : automatedTestCases) {
-					List<CustomField> customfields = automatedTestCase.getCustomFields();
-					for (CustomField field: customfields){
-						if (field)
-					}
+				TestCaseWrapper associatedTestCase = getAssociatedTestCase(
+						automatedTestCases, suiteResult);
+				if (associatedTestCase != null) {
 					
-					automatedTestCase.setExecutionStatus(status);
-					automatedTestCase.appendNotes(notes);
-					if (this.isIncludeNotes()) {
-						automatedTestCase.appendNotes(notes);
-					}
-					super.handleCucumberJsonResult(automatedTestCase, build,
+					associatedTestCase.setExecutionStatus(overallStatus);
+					LOGGER.log(Level.ALL, "New Status for Test Case :"
+							+ associatedTestCase.getExecutionStatus());
+					super.handleCucumberJsonResult(associatedTestCase, build,
 							listener, testlink, suiteResult);
-
+				} else {
+					LOGGER.log(Level.ALL,
+							"Did not find Any test case associated with the results");
 				}
 			}
+
+			
+
 		} catch (IOException e) {
 			throw new ResultSeekerException(e);
 		} catch (InterruptedException e) {
