@@ -35,35 +35,46 @@ import hudson.tasks.junit.TestResult;
 import hudson.tasks.junit.CaseResult;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import br.eti.kinoshita.testlinkjavaapi.constants.ExecutionStatus;
+import br.eti.kinoshita.testlinkjavaapi.model.CustomField;
 
 /**
- * <p>Seeks for test results matching each JUnit Case Result name with the key 
- * custom field.</p>
+ * <p>
+ * Seeks for test results matching each JUnit Case Result name with the key
+ * custom field.
+ * </p>
  * 
- * <p>Skips JUnit Case Results that were disabled.</p>
+ * <p>
+ * Skips JUnit Case Results that were disabled.
+ * </p>
  * 
  * @author Bruno P. Kinoshita - http://www.kinoshita.eti.br
  * @author Oliver Merkel - Merkel.Oliver at web.de
  * @since 3.1
  */
 public class JUnitAllResultSeeker extends AbstractJUnitResultSeeker {
-	private static final Logger LOGGER = Logger.getLogger("hudson.plugins.testlink");
+	private static final Logger LOGGER = Logger
+			.getLogger("hudson.plugins.testlink");
 
 	private static final long serialVersionUID = 2278496777245515704L;
 
 	/**
-	 * @param includePattern Include pattern used when looking for results
-	 * @param keyCustomField Key custom field to match against the results
-	 * @param attachJUnitXML Bit that enables attaching result file to TestLink
+	 * @param includePattern
+	 *            Include pattern used when looking for results
+	 * @param keyCustomField
+	 *            Key custom field to match against the results
+	 * @param attachJUnitXML
+	 *            Bit that enables attaching result file to TestLink
 	 */
 	@DataBoundConstructor
-	public JUnitAllResultSeeker(String includePattern, String keyCustomField, boolean attachJUnitXML, boolean includeNotes) {
+	public JUnitAllResultSeeker(String includePattern, String keyCustomField,
+			boolean attachJUnitXML, boolean includeNotes) {
 		super(includePattern, keyCustomField, attachJUnitXML, includeNotes);
 	}
 
@@ -80,37 +91,77 @@ public class JUnitAllResultSeeker extends AbstractJUnitResultSeeker {
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see hudson.plugins.testlink.result.ResultSeeker#seekAndUpdate(hudson.plugins.testlink.result.TestCaseWrapper<?>[], hudson.model.AbstractBuild, hudson.Launcher, hudson.model.BuildListener, hudson.plugins.testlink.TestLinkSite, hudson.plugins.testlink.result.Report)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * hudson.plugins.testlink.result.ResultSeeker#seekAndUpdate(hudson.plugins
+	 * .testlink.result.TestCaseWrapper<?>[], hudson.model.AbstractBuild,
+	 * hudson.Launcher, hudson.model.BuildListener,
+	 * hudson.plugins.testlink.TestLinkSite,
+	 * hudson.plugins.testlink.result.Report)
 	 */
 	@Override
-	public void seek(TestCaseWrapper[] automatedTestCases, AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener, TestLinkSite testlink) throws ResultSeekerException {
-		listener.getLogger().println( Messages.Results_JUnit_LookingForTestCases() ); // i18n
+	public void seek(TestCaseWrapper[] automatedTestCases,
+			AbstractBuild<?, ?> build, Launcher launcher,
+			BuildListener listener, TestLinkSite testlink)
+			throws ResultSeekerException {
+		listener.getLogger().println(
+				Messages.Results_JUnit_LookingForTestCases()); // i18n
 		try {
 			final JUnitParser parser = new JUnitParser(false);
-			listener.getLogger().println("includePattern="+this.includePattern);
-			LOGGER.log(Level.ALL, "includePattern="+this.includePattern);
+			listener.getLogger().println(
+					"includePattern=" + this.includePattern);
+			LOGGER.log(Level.ALL, "includePattern=" + this.includePattern);
 
-			final TestResult testResult = parser.parse(this.includePattern, build, launcher, listener);
-			
-			for(SuiteResult suiteResult : testResult.getSuites()) {
-				LOGGER.log(Level.ALL, "SuiteResult="+suiteResult.getName());
-				for(CaseResult caseResult : suiteResult.getCases()) {
-					LOGGER.log(Level.ALL, "CaseResult="+caseResult.getName()+" isSkipped="+caseResult.isSkipped()+" Status= "+this.getExecutionStatus(caseResult));
+			final TestResult testResult = parser.parse(this.includePattern,
+					build, launcher, listener);
 
-					for(TestCaseWrapper automatedTestCase : automatedTestCases) {
-						LOGGER.log(Level.ALL, "automatedTestCase="+automatedTestCase.getName());
-						if(this.isIncludeNotes()) {
-							final String notes = this.getJUnitNotes(caseResult);
-							automatedTestCase.appendNotes(notes);
+			for (SuiteResult suiteResult : testResult.getSuites()) {
+				LOGGER.log(Level.ALL, "SuiteResult=" + suiteResult.getName());
+				for (CaseResult caseResult : suiteResult.getCases()) {
+					LOGGER.log(
+							Level.ALL,
+							"CaseResult.getName=" + caseResult.getName()
+									+ " isSkipped=" + caseResult.isSkipped()
+									+ " Status= "
+									+ this.getExecutionStatus(caseResult));
+					LOGGER.log(Level.ALL, "CaseResult.getClassName="
+							+ caseResult.getClassName() + " displayname="
+							+ caseResult.getDisplayName() + " FullName= "
+							+ caseResult.getFullName());
+
+					for (TestCaseWrapper automatedTestCase : automatedTestCases) {
+						final String[] commaSeparatedValues = automatedTestCase
+								.getKeyCustomFieldValues(this.keyCustomField);
+
+						for (String value : commaSeparatedValues) {
+							LOGGER.log(Level.ALL,"CustomField Value="+value+" caseResult.getClassName="+caseResult.getClassName());
+							
+							if (!caseResult.isSkipped()
+									&& caseResult.getClassName()
+											.contains(value)) {
+
+								final ExecutionStatus status = this
+										.getExecutionStatus(caseResult);
+								
+								LOGGER.log(Level.ALL,"Adding fied="+value+" Status="+status);
+
+								automatedTestCase.addCustomFieldAndStatus(
+										value, status);
+								
+								LOGGER.log(Level.ALL,"Checking Status for field="+value+" : status="+automatedTestCase.getExecutionStatus(value));
+								
+								if (this.isIncludeNotes()) {
+									final String notes = this
+											.getJUnitNotes(caseResult);
+									automatedTestCase.appendNotes(notes);
+								}
+								super.handleResult(automatedTestCase, build, listener, testlink, suiteResult);
+
+							}
 						}
-						ExecutionStatus status = this.getExecutionStatus(caseResult);
-						automatedTestCase.setExecutionStatus(status);
-						automatedTestCase.addCustomFieldAndStatus(this.keyCustomField, status);
-						LOGGER.log(Level.ALL, "Posting result to TestLink:"+automatedTestCase.getName()+" result="+automatedTestCase.getExecutionStatus());
-
-						super.handleResult(automatedTestCase, build, listener, testlink, suiteResult);
-						
+											
 					}
 				}
 			}
@@ -122,37 +173,36 @@ public class JUnitAllResultSeeker extends AbstractJUnitResultSeeker {
 	}
 
 	/**
-	 * @param caseResult the case result
-	 * @return NOT_RUN in case it is skipped, PASSED if it passed, and FAILED otherwise
+	 * @param caseResult
+	 *            the case result
+	 * @return NOT_RUN in case it is skipped, PASSED if it passed, and FAILED
+	 *         otherwise
 	 */
 	private ExecutionStatus getExecutionStatus(CaseResult caseResult) {
-		if(caseResult.isSkipped()) {
+		if (caseResult.isSkipped()) {
 			return ExecutionStatus.NOT_RUN;
-		} else if(caseResult.isPassed()) {
+		} else if (caseResult.isPassed()) {
 			return ExecutionStatus.PASSED;
 		} else {
 			return ExecutionStatus.FAILED;
 		}
 	}
-	
+
 	/**
 	 * Retrieves the Notes about the JUnit test.
 	 * 
-	 * @param testCase JUnit test.
+	 * @param testCase
+	 *            JUnit test.
 	 * @return Notes about the JUnit test.
 	 */
-	private String getJUnitNotes( CaseResult testCase )
-	{
+	private String getJUnitNotes(CaseResult testCase) {
 		StringBuilder notes = new StringBuilder();
-		notes.append( 
-				Messages.Results_JUnit_NotesForTestCase(
-						testCase.getName(), 
-						testCase.getClassName(), 
-						testCase.getSkipCount(), 
-						testCase.getFailCount(), 
-						(testCase.getSuiteResult() != null ? testCase.getSuiteResult().getTimestamp() : null))
-		);
-		
+		notes.append(Messages.Results_JUnit_NotesForTestCase(
+				testCase.getName(), testCase.getClassName(), testCase
+						.getSkipCount(), testCase.getFailCount(), (testCase
+						.getSuiteResult() != null ? testCase.getSuiteResult()
+						.getTimestamp() : null)));
+
 		return notes.toString();
 	}
 

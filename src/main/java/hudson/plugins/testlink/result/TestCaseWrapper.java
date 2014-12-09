@@ -29,6 +29,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -43,7 +45,8 @@ import br.eti.kinoshita.testlinkjavaapi.model.TestCaseStep;
  * @since 2.0
  */
 public class TestCaseWrapper implements Serializable {
-
+	private static final Logger LOGGER = Logger
+			.getLogger("hudson.plugins.testlink");
 	private static final long serialVersionUID = 6440057711152759081L;
 
 	/**
@@ -153,6 +156,15 @@ public class TestCaseWrapper implements Serializable {
 	public ExecutionStatus getExecutionStatus(String keyCustomFieldName) {
 		String[] keyCustomFieldValues = this.getKeyCustomFieldValues(keyCustomFieldName);
 		int numberOfCustomFields = keyCustomFieldValues != null ? keyCustomFieldValues.length : 0;
+		LOGGER.log(Level.ALL, "Number of CustomFields"+numberOfCustomFields+" customFieldAndStatus.size="+customFieldAndStatus.size());
+		if (keyCustomFieldValues!=null){
+			for (String value:keyCustomFieldValues){
+				LOGGER.log(Level.ALL,"value="+value);
+			}
+		}
+		for (String key :customFieldAndStatus.keySet()){
+			LOGGER.log(Level.ALL,"Key of customeFieldAndStatus="+key);
+		}
 		ExecutionStatus status = ExecutionStatus.NOT_RUN;
 		if (customFieldAndStatus.size() > 0 && customFieldAndStatus.size() == numberOfCustomFields) {
 			status = ExecutionStatus.PASSED;
