@@ -78,6 +78,51 @@ public abstract class AbstractJUnitResultSeeker extends ResultSeeker {
 		return attachJUnitXML;
 	}
 
+	protected void handleCucumberJsonResult(TestCaseWrapper automatedTestCase, AbstractBuild<?, ?> build, BuildListener listener, TestLinkSite testlink, final SuiteResult suiteResult) {
+		LOGGER.log(Level.ALL, "Status="+automatedTestCase.getExecutionStatus(this.keyCustomField)+" keyCustomField="+this.keyCustomField);
+		LOGGER.log(Level.ALL, "Name="+automatedTestCase.getName());
+		if(automatedTestCase.getExecutionStatus() != ExecutionStatus.NOT_RUN) {
+			try {
+				listener.getLogger().println( Messages.TestLinkBuilder_Update_AutomatedTestCases() );
+				final int executionId = testlink.updateTestCase(automatedTestCase);
+				
+				if(executionId > 0 && this.isAttachJUnitXML()) {
+					Attachment attachment = build.getWorkspace().act( new FileCallable<Attachment>() {
+
+						private static final long serialVersionUID = -5411683541842375558L;
+
+						public Attachment invoke(File f,
+								VirtualChannel channel)
+								throws IOException,
+								InterruptedException {
+							
+							File reportFile = new File(suiteResult.getFile());
+							final Attachment attachment = new Attachment();
+							attachment.setContent(AbstractJUnitResultSeeker.this.getBase64FileContent(reportFile));
+							attachment.setDescription(reportFile.getName());
+							attachment.setFileName(reportFile.getName());
+							attachment.setFileSize(reportFile.length());
+							attachment.setFileType(TEXT_XML_CONTENT_TYPE);
+							attachment.setTitle(reportFile.getName());
+							
+							return attachment;
+						}
+					});
+					testlink.uploadAttachment(executionId, attachment);
+				}
+			} catch ( TestLinkAPIException te ) {
+				build.setResult(Result.UNSTABLE);
+				te.printStackTrace(listener.getLogger());
+			} catch (IOException e) {
+				build.setResult(Result.UNSTABLE);
+				e.printStackTrace(listener.getLogger());
+			} catch (InterruptedException e) {
+				build.setResult(Result.UNSTABLE);
+				e.printStackTrace(listener.getLogger());
+			}
+		}
+	}
+
 	protected void handleResult(TestCaseWrapper automatedTestCase, AbstractBuild<?, ?> build, BuildListener listener, TestLinkSite testlink, final SuiteResult suiteResult) {
 		LOGGER.log(Level.ALL, "Status="+automatedTestCase.getExecutionStatus(this.keyCustomField)+" keyCustomField="+this.keyCustomField);
 		LOGGER.log(Level.ALL, "Name="+automatedTestCase.getName());

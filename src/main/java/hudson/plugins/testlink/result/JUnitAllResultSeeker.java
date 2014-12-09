@@ -90,6 +90,20 @@ public class JUnitAllResultSeeker extends AbstractJUnitResultSeeker {
 			return "JUnit All Tests"; // TBD: i18n
 		}
 	}
+	
+	private boolean TestCaseWrapper getTestCaseAssociatedWithSuite(SuiteResult suiteResult,TestCaseWrapper[] automatedTestCases){
+		for (TestCaseWrapper automatedTestCase : automatedTestCases) {
+			List<CustomField> customfields = automatedTestCase.getCustomFields();
+			for (CustomField field: customfields){
+				for (CaseResult caseResult : suiteResult.getCases()) {
+					if (caseResult.getClassName().contains(field.getValue())){
+						
+					}
+				
+				}
+			}
+		}
+	}
 
 	/*
 	 * (non-Javadoc)
@@ -118,53 +132,35 @@ public class JUnitAllResultSeeker extends AbstractJUnitResultSeeker {
 					build, launcher, listener);
 
 			for (SuiteResult suiteResult : testResult.getSuites()) {
-				LOGGER.log(Level.ALL, "SuiteResult=" + suiteResult.getName());
+				LOGGER.log(Level.ALL, "JUnitAllResult.seek: SuiteResult.getName=" + suiteResult.getName());
+				ExecutionStatus status = ExecutionStatus.NOT_RUN;
+				String notes = "";
 				for (CaseResult caseResult : suiteResult.getCases()) {
-					LOGGER.log(
-							Level.ALL,
-							"CaseResult.getName=" + caseResult.getName()
-									+ " isSkipped=" + caseResult.isSkipped()
-									+ " Status= "
-									+ this.getExecutionStatus(caseResult));
-					LOGGER.log(Level.ALL, "CaseResult.getClassName="
-							+ caseResult.getClassName() + " displayname="
-							+ caseResult.getDisplayName() + " FullName= "
-							+ caseResult.getFullName());
-
-					for (TestCaseWrapper automatedTestCase : automatedTestCases) {
-						final String[] commaSeparatedValues = automatedTestCase
-								.getKeyCustomFieldValues(this.keyCustomField);
-
-						for (String value : commaSeparatedValues) {
-							LOGGER.log(Level.ALL,"seek: CustomField Value="+value+" caseResult.getClassName="+caseResult.getClassName());
-							
-							if (!caseResult.isSkipped()
-									&& caseResult.getClassName()
-											.contains(value)) {
-
-								final ExecutionStatus status = this
-										.getExecutionStatus(caseResult);
-								
-								LOGGER.log(Level.ALL,"seek: Adding fied="+value+" Status="+status);
-
-								automatedTestCase.addCustomFieldAndStatus(
-										value, status);
-								
-								LOGGER.log(Level.ALL,"seek: Checking Status for field="+value);
-								LOGGER.log(Level.ALL,"seek: Status="+automatedTestCase.getExecutionStatus(value));
-								
-								
-								if (this.isIncludeNotes()) {
-									final String notes = this
-											.getJUnitNotes(caseResult);
-									automatedTestCase.appendNotes(notes);
-								}
-								super.handleResult(automatedTestCase, build, listener, testlink, suiteResult);
-
-							}
-						}
-											
+					LOGGER.log(Level.ALL, "JUnitAllResult.seek: caseResult.getName="+caseResult.getName()+" Status="+this.getExecutionStatus(caseResult));
+					if (status != ExecutionStatus.FAILED) {
+						status = this.getExecutionStatus(caseResult);
 					}
+					if (this.isIncludeNotes()) {
+						notes += "\n" + this.getJUnitNotes(caseResult);
+					}
+
+				}
+				LOGGER.log(Level.ALL, "JUnitAllResult.seek: Status = "+status+" for "+suiteResult.getName());
+				
+				for (TestCaseWrapper automatedTestCase : automatedTestCases) {
+					List<CustomField> customfields = automatedTestCase.getCustomFields();
+					for (CustomField field: customfields){
+						if (field)
+					}
+					
+					automatedTestCase.setExecutionStatus(status);
+					automatedTestCase.appendNotes(notes);
+					if (this.isIncludeNotes()) {
+						automatedTestCase.appendNotes(notes);
+					}
+					super.handleCucumberJsonResult(automatedTestCase, build,
+							listener, testlink, suiteResult);
+
 				}
 			}
 		} catch (IOException e) {
