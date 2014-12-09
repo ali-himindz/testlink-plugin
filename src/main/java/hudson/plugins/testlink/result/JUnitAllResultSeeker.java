@@ -136,7 +136,7 @@ public class JUnitAllResultSeeker extends AbstractJUnitResultSeeker {
 								.getKeyCustomFieldValues(this.keyCustomField);
 
 						for (String value : commaSeparatedValues) {
-							LOGGER.log(Level.ALL,"CustomField Value="+value+" caseResult.getClassName="+caseResult.getClassName());
+							LOGGER.log(Level.ALL,"seek: CustomField Value="+value+" caseResult.getClassName="+caseResult.getClassName());
 							
 							if (!caseResult.isSkipped()
 									&& caseResult.getClassName()
@@ -145,12 +145,14 @@ public class JUnitAllResultSeeker extends AbstractJUnitResultSeeker {
 								final ExecutionStatus status = this
 										.getExecutionStatus(caseResult);
 								
-								LOGGER.log(Level.ALL,"Adding fied="+value+" Status="+status);
+								LOGGER.log(Level.ALL,"seek: Adding fied="+value+" Status="+status);
 
 								automatedTestCase.addCustomFieldAndStatus(
 										value, status);
 								
-								LOGGER.log(Level.ALL,"Checking Status for field="+value+" : status="+automatedTestCase.getExecutionStatus(value));
+								LOGGER.log(Level.ALL,"seek: Checking Status for field="+value);
+								LOGGER.log(Level.ALL,"seek: Status="+automatedTestCase.getExecutionStatus(value));
+								
 								
 								if (this.isIncludeNotes()) {
 									final String notes = this
