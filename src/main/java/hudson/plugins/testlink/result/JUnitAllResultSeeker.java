@@ -96,12 +96,12 @@ public class JUnitAllResultSeeker extends AbstractJUnitResultSeeker {
 		LOGGER.log(Level.ALL,"Finding Associated Test Cases for Suite="+suiteResult.getName());
 		
 		for (TestCaseWrapper tc : automatedTestCases) {
-			String name = tc.getName().toLowerCase().replace(" ", "_");
+			String scenario_name = tc.getKeyCustomFieldValue("SCENARIO_NAME").toLowerCase().replace(" ", "-");
 			for (String classname : suiteResult.getClassNames()) {
-				LOGGER.log(Level.ALL,"Name="+name+" classname="+classname);
-				if (classname.contains(name)) {
+				LOGGER.log(Level.ALL,"scenario_name="+scenario_name+" classname="+classname);
+				if (classname.contains(scenario_name)) {
 					LOGGER.log(Level.ALL, "Found Test Case :"+tc.getId()+":"
-							+ tc.getName()+" name="+name+" for classname="+classname+" for suiteResult="+suiteResult.getName());
+							+ tc.getName()+" scenario_name="+scenario_name+" for classname="+classname+" for suiteResult="+suiteResult.getName());
 					return tc;
 				}
 			}
